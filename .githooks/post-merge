@@ -1,0 +1,58 @@
+#!/bin/bash
+# Post-merge hook to automatically update uv.lock after merging changes
+# This runs after git merge, git pull, and git rebase operations
+
+set -e
+
+echo "Checking for uv.lock updates after merge..."
+
+# Function to update uv lock in a directory
+update_poetry_lock() {
+    local dir="$1"
+    local project_name=$(basename "$dir")
+
+    echo "Processing $project_name in $dir..."
+    # Check if uv.lock exists in the directory
+    if [ -f "$dir/pyproject.toml" ] && [ -f "$dir/uv.lock" ]; then
+        echo "Updating uv.lock in $project_name..."
+        cd "$dir"
+
+        # Check if lock file is outdated
+        if ! uv venv resolve --lock-file uv.lock; then
+            echo "uv.lock is outdated, updating..."
+            uv lock
+            echo "uv.lock updated successfully in $project_name."
+            
+            # Stage the updated uv.lock file
+            git add uv.lock
+            echo "uv.lock has been staged for commit in $project_name."
+        else
+            echo "uv.lock is already up to date in $project_name."
+        fi
+
+        cd - >/dev/null
+    else
+        echo "No uv.lock found in $dir, skipping update."
+    fi
+}
+
+# Check if any pyproject.toml files were modified in the merge
+if git diff-tree -r --name-only --no-commit-id HEAD~1 HEAD | grep -q "pyproject.toml\|uv.lock"; then
+    echo "Changes detected in pyproject.toml or uv.lock files, updating uv.lock..."
+    
+    # Find all directories with pyproject.toml and update uv.lock
+    for dir in $(find . -type f -name "pyproject.toml" -exec dirname {} \; | sort -u); do
+        update_poetry_lock "$dir"
+    done
+
+    if git diff --staged --quiet; then
+        echo "All uv.lock files are up to date, no changes to commit."
+    else
+        echo ""
+        echo "❗ Changes detected in uv.lock files and staged."
+        echo "   Run 'git commit -m \"Update uv.lock files after merge\"' to finalize the changes."
+        echo ""
+    fi
+else
+    echo "✅ No changes in pyproject.toml or uv.lock files detected."
+fi
