@@ -55,7 +55,7 @@ install:
 		echo "🔧 Processing: $$dir"; \
 		cd $$dir && \
 		pyenv local $(PYTHON_VERSION) && \
-		uv venv --clear; \
+		uv sync; \
 		cd - > /dev/null; \
 	done
 	@echo "Dependencies installed successfully."

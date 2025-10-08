@@ -7,7 +7,7 @@ set -e
 echo "Checking for uv.lock updates after merge..."
 
 # Function to update uv lock in a directory
-update_poetry_lock() {
+update_uv_lock() {
     local dir="$1"
     local project_name=$(basename "$dir")
 
@@ -18,13 +18,16 @@ update_poetry_lock() {
         cd "$dir"
 
         # Check if lock file is outdated
-        if ! uv venv resolve --lock-file uv.lock; then
+        if ! uv sync --frozen; then
             echo "uv.lock is outdated, updating..."
+            # Refresh lock file without installing
             uv lock
             echo "uv.lock updated successfully in $project_name."
-            
+            # Intsall latest deps as well
+            echo "installing latest dependencies in $project_name."
+            uv sync
             # Stage the updated uv.lock file
-            git add uv.lock
+            git add uv.lock || true
             echo "uv.lock has been staged for commit in $project_name."
         else
             echo "uv.lock is already up to date in $project_name."
@@ -42,7 +45,7 @@ if git diff-tree -r --name-only --no-commit-id HEAD~1 HEAD | grep -q "pyproject.
     
     # Find all directories with pyproject.toml and update uv.lock
     for dir in $(find . -type f -name "pyproject.toml" -exec dirname {} \; | sort -u); do
-        update_poetry_lock "$dir"
+        update_uv_lock "$dir"
     done
 
     if git diff --staged --quiet; then
