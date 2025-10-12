@@ -25,7 +25,7 @@ for pkg in PKGS:
         print(f"Report file not found in {pkg_path}")
         continue
 
-    with open(report_path, "r") as f:
+    with open(report_path) as f:
         data = json.load(f)
         # Collet tests
         tests = data.get("tests", [])
