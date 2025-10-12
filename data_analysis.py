@@ -37,7 +37,7 @@ def main():
     headers = headers + features_mean + features_std + features_worst
     data.columns = headers
     # save dataset with headers
-    data.to_csv("data/data_with_headers.csv")
+    data.to_csv("data/data_with_headers.csv", index=False)
     # draw pairplots for mean, std, and worst if flat --display is true
     if args.display:
         for title in ["mean", "std", "worst"]:
