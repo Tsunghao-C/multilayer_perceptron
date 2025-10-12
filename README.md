@@ -4,9 +4,9 @@
 Steps to do
 
 1. Data preprocess and visualization
-    - basic visualization with histogram, pairplot
-    - data cleaning: remove outlier, nan, empty, etc.
-    - feature selection / extraction
+    - basic visualization with histogram, pairplot (done)
+    - data cleaning: remove outlier, nan, empty, etc. (dataset is clean without missing data or outliers)
+    - feature selection / extraction (consider to ignore feature 5, 9, 10 which did not help that much to distinguish M and B)
     - feature scaling (normalization, stadardization)
 2. Train test split program
 3. MLP training program
