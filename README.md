@@ -15,7 +15,7 @@ Steps to do
     - [bonus] store the history of metrics during training
     - [bonus] implement early stopping
     - [bonus] Use more complex optimization function lke Adam, RMSprop, ...
-    - [bonus] Evaluate learning pahse with multiple metrics (?)
+    - [bonus] Evaluate learning pahse with multiple metrics (not just a single R2 score for example)
 4. prediction program
 5. Display multiple learning curves on the same graph to compare different models (with different configs)
 
