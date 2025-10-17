@@ -75,14 +75,12 @@ def main():
     # Separate features and labels
     x_train = data
     y_train = df_one  # Keep both B and M columns for one-hot encoding
-    print(y_train)
 
     # Ensure columns are in consistent order: [B, M]
     if 'B' in y_train.columns and 'M' in y_train.columns:
         y_train = y_train[['B', 'M']]  # B=0, M=1 becomes [1,0] for B, [0,1] for M
 
-    print(y_train)
-    exit()
+    # print(y_train)
     # print(x_train)
     # print(x_train.shape)
 
