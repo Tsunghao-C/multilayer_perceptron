@@ -16,10 +16,11 @@ class Dense:
         self.activation = activation_getter(activation)
         self.weights = np.random.rand(input_size, output_size)
         self.biases = np.random.rand(1, output_size)
+        self.z = None  # pre-activation output of this layer
+        self.a = None  # activation output of this layer
         self.last_input = None  # cached input used for gradient computation
-        self.dW = None  # gradient w.r.t. weights
-        self.dB = None  # gradient w.r.t. biases
-        self.z = None
+        self.dW = None  # gradient w.r.t. weights (dL/dW)
+        self.dB = None  # gradient w.r.t. biases (dL/dB)
 
     def forward(self, inputs):
         """
@@ -34,21 +35,22 @@ class Dense:
         # cache inputs for use in backward pass
         self.last_input = inputs
         self.z = inputs @ self.weights + self.biases
-        return self.activation.forward(self.z)
+        self.a = self.activation.forward(self.z)
+        return self.a
 
     def backward(self, gradients):
         """
         Perform the backward pass through the layer.
 
         Args:
-            gradients: Gradient of the loss with respect to the output of this layer.
+            gradients: Gradient of the loss w.r.t. the post-activation output of this layer. (dL/dA)
 
         Return:
-            The gradient of the loss with respect to the input of this layer.
+            The gradient of the loss w.r.t. the input of this layer.
         """
         # gradients: dL/dA (upstream gradient w.r.t. post-activation output)
-        # Convert to gradient w.r.t. pre-activation using activation derivative: dL/dZ
-        dz = gradients * self.activation.backward(self.z)
+        # Convert to gradient w.r.t. pre-activation using activation derivative: dL/dZ = dL/dA * dA/dZ (activation_derivative)
+        dz = gradients * self.activation.backward(self.a)  # delta
 
         # Compute parameter gradients using cached input
         batch_size = self.last_input.shape[0]

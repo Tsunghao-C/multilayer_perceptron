@@ -1,4 +1,5 @@
 from src.MLP.Dense import Dense
+from src.MLP.loss_functions import BCE
 from src.MLP.optimizer import Optimizer
 
 
@@ -15,6 +16,7 @@ class MLP:
         self.h_layer_1 = Dense(input_shape[1], 4, activation='sigmoid')
         self.h_layer_2 = Dense(4, 2, activation='sigmoid')
         self.output_layer = Dense(2, output_shape, out_activation)
+        self.loss_function = BCE() # use Binary cross Entropy to calculate Loss
 
     def forward(self, x):
         """
@@ -41,10 +43,10 @@ class MLP:
 
         Args:
             y_true: Ground truth
-            y_pred: Predicted values by the model
+            y_pred: Predicted values by the model (i.e. y_hat)
         """
         # Upstream gradient from loss w.r.t. network output (dL/dA3)
-        dA3 = (y_pred - y_true)
+        dA3 = self.loss_function.loss_derivative(y_true, y_pred)
 
         # Each Dense layer handles its own activation derivative internally
         dA2 = self.output_layer.backward(dA3)

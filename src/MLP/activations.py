@@ -37,8 +37,8 @@ class Sigmoid(IActivations):
         Raises:
             The function should not raise any exception
         """
-        s = 1 / (1 + np.exp(-x))
-        return s * (1 - s)
+        return x * (1 - x)
+
 
 
 class ReLU(IActivations):
