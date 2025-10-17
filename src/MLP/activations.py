@@ -92,8 +92,18 @@ class SoftMax(IActivations):
         Return:
             derivative matrix
         """
+        # Ensure s is at least 2D
+        if s.ndim == 1:
+            s = s.reshape(-1, 1)
+
         B, C = s.shape
 
+        # For single output (binary classification), use sigmoid-like derivative
+        if C == 1:
+            # For single output, the derivative is s * (1 - s)
+            return s * (1 - s)
+
+        # For multi-class classification (C > 1)
         # diag(s) part: each row gets its diagonal softmax values
         diag_s = np.einsum('bi,ij->bij', s, np.eye(C))  # (B, C, C)
 

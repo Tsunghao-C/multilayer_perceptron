@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import numpy as np
+
 from src.MLP.Dense import Dense
 from src.MLP.loss_functions import BCE
 from src.MLP.optimizer import Optimizer
@@ -21,9 +23,9 @@ class MLP:
             self,
             network_config: list[DenseConfig],
             epoch: int = 1000,
-            lr: float = 0.005,
+            lr: float = 0.01,
             es_threshold: float = 0.0001,
-            batch_size: int = 16,
+            batch_size: int = 8,
             print_freq: int = 100,
         ) -> None:
         """
@@ -40,14 +42,20 @@ class MLP:
         # Build a dynamic list of layers from the provided configs
         self.layers: list[Dense] = []
         for cfg in network_config:
+            weight_init = cfg.weights_init if cfg.weights_init else "xavier_uniform"
             self.layers.append(
-                Dense(cfg.input_shape, cfg.output_shape, activation=cfg.activation)
+                Dense(cfg.input_shape, cfg.output_shape, activation=cfg.activation,
+                      weight_init=weight_init)
             )
 
         # cache of activations (post-activation outputs) per layer from last forward pass
         self._activations: list = []
         self.loss_function = BCE() # use Binary cross Entropy to calculate Loss
         self.optimizer = Optimizer(lr)
+        self.epochs = epoch
+        self.batch_size = batch_size
+        self.print_freq = print_freq
+        self.es_threshold = es_threshold
 
     def forward(self, x):
         """
@@ -59,6 +67,12 @@ class MLP:
         Return:
             The output of the network after the forward pass.
         """
+        # Ensure input is a numpy array
+        if hasattr(x, 'values'):  # pandas DataFrame/Series
+            x = x.values
+        elif not isinstance(x, np.ndarray):
+            x = np.array(x)
+
         # Store intermediate activation values
         a = x
         self._activations = []
@@ -76,7 +90,7 @@ class MLP:
             y_pred: Predicted values by the model (i.e. y_hat)
         """
         # Upstream gradient from loss w.r.t. network output (dL/dA_L)
-        dA = self.loss_function.loss_derivative(y_true, y_pred)
+        dA = self.loss_function.loss_derivative(y_true, y_pred, eps=1e-15)
 
         # Backpropagate through layers in reverse order
         # Convert dA to dZ for the last layer using its activation derivative
@@ -102,6 +116,45 @@ class MLP:
         """
         for layer in self.layers:
             optimizer.sgd(layer)
+
+    def fit(self, x, y):
+        """
+        training the model
+        """
+        prev_loss = float("inf")
+        es_buffer = 5
+        es_wait = 0
+        batches = int(x.shape[0] // self.batch_size + 1) if x.shape[0] % self.batch_size else int(x.shape[0] // self.batch_size)
+        print(f"{batches} batches for each epoch. Batch size = {self.batch_size}")
+        for epoch in range(self.epochs):
+            # train data by batches
+            for i in range(batches):
+                start = i * self.batch_size
+                end = (i + 1) * self.batch_size
+                x_batch = x[start:end] if i < batches - 1 else x[start:]
+                y_batch = y[start:end] if i < batches - 1 else y[start:]
+                # forward
+                y_hat = self.forward(x_batch)
+                # loss calculation
+                loss = self.loss_function.loss(y_batch, y_hat, eps=1e-15)
+                # print(f"Loss of batch {i} in epoch {epoch}:\t{loss}")
+                # backward propogate dW, dB in each layer
+                self.backward(y_batch, y_hat)
+                # update weights and biases with optimizer
+                self.update(self.optimizer)
+            # Print epoch status
+            if epoch % self.print_freq == 0:
+                print(f"Epoch: {epoch}")
+                print(f"loss: {loss}")
+                print("=" * 30)
+            # Early Stopping check
+            if prev_loss - loss < self.es_threshold:
+                es_wait += 1
+            if es_wait >= es_buffer:
+                print(f"Early stopping triggered at epoch {epoch}")
+                return
+            prev_loss = loss
+
 
 
 # if __name__ == "__main__":

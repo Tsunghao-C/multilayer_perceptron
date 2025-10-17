@@ -48,14 +48,13 @@ def nn_config_gen(config_path: str, feat_size: int) -> list[DenseConfig]:
         cfg = DenseConfig(
             input_shape=input_shape,
             output_shape=layer["nodes"],
-            activation=layer["activation"]
+            activation=layer["activation"],
+            weights_init=layer["weights_init"]
         )
         output_confs.append(cfg)
         input_shape = layer["nodes"]
 
     return output_confs
-
-
 
 
 def zscore(x):
@@ -75,13 +74,18 @@ def main():
     data = data.rename(columns={"M": "Diagnosis"})
     y_train = data["Diagnosis"]
     x_train = data.drop(["Diagnosis"], axis=1)
-    print(y_train)
+    # print(y_train)
     # print(x_train)
+    # print(x_train.shape)
 
     # 2. apply zscore normalization to each feature
     features = list(x_train.columns)
     for feat in features:
         x_train[feat] = zscore(x_train[feat])
+
+    # Convert pandas DataFrames to numpy arrays for neural network processing
+    x_train = x_train.values
+    y_train = y_train.values.reshape(-1, 1)  # Reshape to column vector for consistency
 
     # Generate network configuration from JSON
     network_config = nn_config_gen(str(args.config), x_train.shape[1])
@@ -90,6 +94,9 @@ def main():
     # Init MLP network instance
     mlp = MLP(network_config)
     print(mlp)
+
+    # Train with input data
+    mlp.fit(x_train, y_train)
 
 
 if __name__ == "__main__":
