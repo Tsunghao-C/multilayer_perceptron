@@ -47,12 +47,21 @@ class MLP:
         """
         # Upstream gradient from loss w.r.t. network output (dL/dA3)
         dA3 = self.loss_function.loss_derivative(y_true, y_pred)
+        # Upstream gradient from loss w.r.t. network input (dL/dz3 = dL/dA3 * dA3/dz3)
+        dz3 = dA3 * self.output_layer.activation.backward(self.a3)  # error of outer layer
 
-        # Each Dense layer handles its own activation derivative internally
-        dA2 = self.output_layer.backward(dA3)
-        dA1 = self.h_layer_2.backward(dA2)
-        _ = self.h_layer_1.backward(dA1)
+        # note: if any of the following case, the dL/dz3 is a special case
+        # and can be simplified as y_pred - y_true
+        # . 1. Loss function == Classical Cross Entropy, Output Activation == Softmax
+        # . 2. Loss function == Binary Cross Entropy, Output Acitvation == Sigmoid
 
+        dA2 = self.output_layer.backward(dz3)  # (dL/dA2)
+        dz2 = dA2 * self.h_layer_2.activation.backward(self.a2)  # error of layer 2
+
+        dA1 = self.h_layer_2.backward(dz2)
+        dz1 = dA1 * self.h_layer_1.activation.backward(self.a1)
+
+        _ = self.h_layer_1.backward(dz1)
 
     def update(self, optimizer: Optimizer):
         """

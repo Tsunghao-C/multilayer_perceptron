@@ -17,8 +17,7 @@ class Dense:
         self.weights = np.random.rand(input_size, output_size)
         self.biases = np.random.rand(1, output_size)
         self.z = None  # pre-activation output of this layer
-        self.a = None  # activation output of this layer
-        self.last_input = None  # cached input used for gradient computation
+        self.batch_size = None  # cached input used for gradient computation
         self.dW = None  # gradient w.r.t. weights (dL/dW)
         self.dB = None  # gradient w.r.t. biases (dL/dB)
 
@@ -33,29 +32,28 @@ class Dense:
             The output of the layer after applying the weights and biases.
         """
         # cache inputs for use in backward pass
-        self.last_input = inputs
+        self.batch_size = inputs.shape[0]
         self.z = inputs @ self.weights + self.biases
-        self.a = self.activation.forward(self.z)
-        return self.a
+        return self.activation.forward(self.z)
 
     def backward(self, gradients):
         """
         Perform the backward pass through the layer.
 
         Args:
-            gradients: Gradient of the loss w.r.t. the post-activation output of this layer. (dL/dA)
+            gradients: Gradient of the loss w.r.t. the pre-activation output of this layer. (dL/dz or Delta)
 
         Return:
             The gradient of the loss w.r.t. the input of this layer.
         """
         # gradients: dL/dA (upstream gradient w.r.t. post-activation output)
         # Convert to gradient w.r.t. pre-activation using activation derivative: dL/dZ = dL/dA * dA/dZ (activation_derivative)
-        dz = gradients * self.activation.backward(self.a)  # delta
+        # dz = gradients * self.activation.backward(self.a)  # delta
 
+        dz = gradients  # delta
         # Compute parameter gradients using cached input
-        batch_size = self.last_input.shape[0]
-        self.dW = self.last_input.T @ dz / batch_size
-        self.dB = np.sum(dz, axis=0, keepdims=True) / batch_size
+        self.dW = self.last_input.T @ dz / self.batch_size
+        self.dB = np.sum(dz, axis=0, keepdims=True) / self.batch_size
 
         # Gradient w.r.t. inputs: dL/dX = dL/dZ @ W^T
         return dz @ self.weights.T

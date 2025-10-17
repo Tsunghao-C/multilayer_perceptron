@@ -31,7 +31,7 @@ class Sigmoid(IActivations):
     def backward(self, x):
         """
         Args:
-            x: has to be a numpy array. a matrix of shape m * n
+            x: the sigmoid(x), has to be a numpy array. a matrix of shape m * n
         Return:
             The derivative as a numpy array. a matrix of shape m * n
         Raises:
@@ -67,6 +67,45 @@ class ReLU(IActivations):
         return np.where(x > 0, 1, 0)
 
 
+class SoftMax(IActivations):
+    def forward(self, x):
+        """
+        Compute softmax values for each set of scores in x.
+
+        Args:
+            x: Input array of shape (batch_size, num_classes) or (num_classes,)
+
+        Return:
+            Softmax probablities of same shape as input
+        """
+        # shift first prevents overflow when calculating exp(x)
+        shifted_x = x - np.max(x, axis=-1, keepdims=True)
+        exp_x = np.exp(shifted_x)
+        sum_exp_x = np.sum(exp_x, axis=-1, keepdims=True)
+        prob = exp_x / sum_exp_x
+        return prob
+
+    def backward(self, s):
+        """
+        Args:
+            s: the calculated softmax(x)
+        Return:
+            derivative matrix
+        """
+        B, C = s.shape
+
+        # diag(s) part: each row gets its diagonal softmax values
+        diag_s = np.einsum('bi,ij->bij', s, np.eye(C))  # (B, C, C)
+
+        # outer product s s^T
+        outer = np.einsum('bi,bj->bij', s, s)  # (B, C, C)
+
+        # J = diag(s) - s s^T
+        jacobian = diag_s - outer
+        return jacobian
+
+
+
 def activation_getter(act_type: str) -> IActivations:
     """
     return an Activation object by type name
@@ -74,11 +113,15 @@ def activation_getter(act_type: str) -> IActivations:
     available activations:
         - Sigmoid (default)
         - ReLU
+        - SoftMax
     """
     act_type = act_type.lower()
     if act_type == "relu":
         return ReLU()
-    return Sigmoid()
+    elif act_type == "softmax":
+        return SoftMax()
+    else:
+        return Sigmoid()
 
 # if __name__ == "__main__":
 #     # Example 1: Basic sigmoid values (0.5)

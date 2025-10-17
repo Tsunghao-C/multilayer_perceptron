@@ -36,3 +36,5 @@ Ten real-valued features are computed for each cell nucleus:
 # References:
 
 1. [MLP explained with visual](https://medium.com/data-science/multilayer-perceptron-explained-a-visual-guide-with-mini-2d-dataset-0ae8100c5d1c)
+2. [Softmax and its derivative](https://medium.com/data-science/derivative-of-the-softmax-function-and-the-categorical-cross-entropy-loss-ffceefc081d1)
+
