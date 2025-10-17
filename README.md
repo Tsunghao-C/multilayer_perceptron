@@ -8,9 +8,9 @@ Steps to do
     - data cleaning: remove outlier, nan, empty, etc. (dataset is clean without missing data or outliers)
     - feature selection / extraction (consider to ignore feature 5, 9, 10 which did not help that much to distinguish M and B)
     - feature scaling (normalization, stadardization)
-2. Train test split program
+2. Train test split program (done)
 3. MLP training program
-    - need to be able to config hidden layers with a config file
+    - need to be able to config hidden layers with a config file (done)
     - visualize learning process (loss, accuracy by epochs)
     - [bonus] store the history of metrics during training
     - [bonus] implement early stopping

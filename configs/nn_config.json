@@ -1,0 +1,14 @@
+[
+    {
+        "nodes": 32,
+        "activation": "sigmoid"
+    },
+    {
+        "nodes": 24,
+        "activation": "sigmoid"
+    },
+    {
+        "nodes": 1,
+        "activation": "softmax"
+    }
+]

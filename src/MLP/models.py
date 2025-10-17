@@ -1,10 +1,31 @@
+from dataclasses import dataclass
+
 from src.MLP.Dense import Dense
 from src.MLP.loss_functions import BCE
 from src.MLP.optimizer import Optimizer
 
 
+@dataclass
+class DenseConfig:
+    """
+    Data model containing configurations to create a Dense layer
+    """
+    input_shape: int
+    output_shape: int
+    activation: str = "sigmoid"
+    weights_init: str | None = None
+
+
 class MLP:
-    def __init__(self, input_shape, output_shape, out_activation: str = "softmax") -> None:
+    def __init__(
+            self,
+            network_config: list[DenseConfig],
+            epoch: int = 1000,
+            lr: float = 0.005,
+            es_threshold: float = 0.0001,
+            batch_size: int = 16,
+            print_freq: int = 100,
+        ) -> None:
         """
         Initialize the Simple Neural Network with specified layers.
 
@@ -13,10 +34,20 @@ class MLP:
             output_shape (integer): Number of output classifications.
             out_activation: activation function for output layer
         """
-        self.h_layer_1 = Dense(input_shape[1], 4, activation='sigmoid')
-        self.h_layer_2 = Dense(4, 2, activation='sigmoid')
-        self.output_layer = Dense(2, output_shape, out_activation)
+        if len(network_config) < 3:
+            raise ValueError("network_config must contain at least 3 layers (or two hidden layers)")
+
+        # Build a dynamic list of layers from the provided configs
+        self.layers: list[Dense] = []
+        for cfg in network_config:
+            self.layers.append(
+                Dense(cfg.input_shape, cfg.output_shape, activation=cfg.activation)
+            )
+
+        # cache of activations (post-activation outputs) per layer from last forward pass
+        self._activations: list = []
         self.loss_function = BCE() # use Binary cross Entropy to calculate Loss
+        self.optimizer = Optimizer(lr)
 
     def forward(self, x):
         """
@@ -29,13 +60,12 @@ class MLP:
             The output of the network after the forward pass.
         """
         # Store intermediate activation values
-        self.a1 = self.h_layer_1.forward(x)
-
-        self.a2 = self.h_layer_2.forward(self.a1)
-
-        self.a3 = self.output_layer.forward(self.a2)
-
-        return self.a3
+        a = x
+        self._activations = []
+        for layer in self.layers:
+            a = layer.forward(a)
+            self._activations.append(a)
+        return a
 
     def backward(self, y_true, y_pred):
         """
@@ -45,23 +75,23 @@ class MLP:
             y_true: Ground truth
             y_pred: Predicted values by the model (i.e. y_hat)
         """
-        # Upstream gradient from loss w.r.t. network output (dL/dA3)
-        dA3 = self.loss_function.loss_derivative(y_true, y_pred)
-        # Upstream gradient from loss w.r.t. network input (dL/dz3 = dL/dA3 * dA3/dz3)
-        dz3 = dA3 * self.output_layer.activation.backward(self.a3)  # error of outer layer
+        # Upstream gradient from loss w.r.t. network output (dL/dA_L)
+        dA = self.loss_function.loss_derivative(y_true, y_pred)
 
-        # note: if any of the following case, the dL/dz3 is a special case
-        # and can be simplified as y_pred - y_true
+        # Backpropagate through layers in reverse order
+        # Convert dA to dZ for the last layer using its activation derivative
+        last_idx = len(self.layers) - 1
+        dz = dA * self.layers[last_idx].activation.backward(self._activations[last_idx])
+
+        # note: if any of the following case, the dL/dz3 is a special case of y_pred - y_true
         # . 1. Loss function == Classical Cross Entropy, Output Activation == Softmax
         # . 2. Loss function == Binary Cross Entropy, Output Acitvation == Sigmoid
 
-        dA2 = self.output_layer.backward(dz3)  # (dL/dA2)
-        dz2 = dA2 * self.h_layer_2.activation.backward(self.a2)  # error of layer 2
-
-        dA1 = self.h_layer_2.backward(dz2)
-        dz1 = dA1 * self.h_layer_1.activation.backward(self.a1)
-
-        _ = self.h_layer_1.backward(dz1)
+        # Hidden layers
+        d_prev = self.layers[last_idx].backward(dz)  # dL/dA_prev
+        for i in range(len(self.layers) - 2, -1, -1):
+            dz = d_prev * self.layers[i].activation.backward(self._activations[i])
+            d_prev = self.layers[i].backward(dz)
 
     def update(self, optimizer: Optimizer):
         """
@@ -70,9 +100,8 @@ class MLP:
         Args:
             optimizer: An instance of Optimizer Class
         """
-        optimizer.sgd(self.h_layer_1)
-        optimizer.sgd(self.h_layer_2)
-        optimizer.sgd(self.output_layer)
+        for layer in self.layers:
+            optimizer.sgd(layer)
 
 
 # if __name__ == "__main__":

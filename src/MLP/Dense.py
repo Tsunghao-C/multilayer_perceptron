@@ -16,7 +16,7 @@ class Dense:
         self.activation = activation_getter(activation)
         self.weights = np.random.rand(input_size, output_size)
         self.biases = np.random.rand(1, output_size)
-        self.z = None  # pre-activation output of this layer
+        # self.z = None  # pre-activation output of this layer
         self.batch_size = None  # cached input used for gradient computation
         self.dW = None  # gradient w.r.t. weights (dL/dW)
         self.dB = None  # gradient w.r.t. biases (dL/dB)
@@ -33,8 +33,8 @@ class Dense:
         """
         # cache inputs for use in backward pass
         self.batch_size = inputs.shape[0]
-        self.z = inputs @ self.weights + self.biases
-        return self.activation.forward(self.z)
+        z = inputs @ self.weights + self.biases
+        return self.activation.forward(z)
 
     def backward(self, gradients):
         """
