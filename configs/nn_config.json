@@ -11,8 +11,8 @@
         "weights_init": "he_uniform"
     },
     {
-        "nodes": 1,
-        "activation": "sigmoid",
+        "nodes": 2,
+        "activation": "softmax",
         "weights_init": "xavier_uniform"
     }
 ]

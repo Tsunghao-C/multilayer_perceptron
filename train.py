@@ -64,17 +64,25 @@ def zscore(x):
 def main():
     args = parse_arg()
     data = pd.read_csv(str(args.dataset))
-    # 1. tranfrom binary result of Diagnosis: B = 0, M = 1
-    # generate binary result (df_one) of B and M
+    # 1. Create one-hot encoded labels for multi-class classification
+    # Generate one-hot encoded result (df_one) of B and M
     df_one = pd.get_dummies(data["Diagnosis"], dtype=int)
     # print(df_one)
-    # add df_one to dataframe and replace Dianosis with the result of M == True
-    data = pd.concat((data, df_one), axis=1)
-    data = data.drop(["Diagnosis", "B"], axis=1)
-    data = data.rename(columns={"M": "Diagnosis"})
-    y_train = data["Diagnosis"]
-    x_train = data.drop(["Diagnosis"], axis=1)
-    # print(y_train)
+
+    # Remove the original Diagnosis column and keep the one-hot encoded columns
+    data = data.drop(["Diagnosis"], axis=1)
+
+    # Separate features and labels
+    x_train = data
+    y_train = df_one  # Keep both B and M columns for one-hot encoding
+    print(y_train)
+
+    # Ensure columns are in consistent order: [B, M]
+    if 'B' in y_train.columns and 'M' in y_train.columns:
+        y_train = y_train[['B', 'M']]  # B=0, M=1 becomes [1,0] for B, [0,1] for M
+
+    print(y_train)
+    exit()
     # print(x_train)
     # print(x_train.shape)
 
@@ -85,7 +93,7 @@ def main():
 
     # Convert pandas DataFrames to numpy arrays for neural network processing
     x_train = x_train.values
-    y_train = y_train.values.reshape(-1, 1)  # Reshape to column vector for consistency
+    y_train = y_train.values  # Keep as 2D array for one-hot encoded labels
 
     # Generate network configuration from JSON
     network_config = nn_config_gen(str(args.config), x_train.shape[1])

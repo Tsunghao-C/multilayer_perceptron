@@ -104,15 +104,11 @@ class SoftMax(IActivations):
             return s * (1 - s)
 
         # For multi-class classification (C > 1)
-        # diag(s) part: each row gets its diagonal softmax values
-        diag_s = np.einsum('bi,ij->bij', s, np.eye(C))  # (B, C, C)
-
-        # outer product s s^T
-        outer = np.einsum('bi,bj->bij', s, s)  # (B, C, C)
-
-        # J = diag(s) - s s^T
-        jacobian = diag_s - outer
-        return jacobian
+        # For neural network backpropagation, we use the simplified derivative
+        # The derivative of softmax is: s * (1 - s) for diagonal elements
+        # and -s_i * s_j for off-diagonal elements
+        # But for backpropagation, we typically use: s * (1 - s) for each element
+        return s * (1 - s)
 
 
 

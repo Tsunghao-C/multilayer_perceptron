@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from src.MLP.Dense import Dense
-from src.MLP.loss_functions import BCE
+from src.MLP.loss_functions import BCE, CrossEntropy
 from src.MLP.optimizer import Optimizer
 
 
@@ -50,7 +50,13 @@ class MLP:
 
         # cache of activations (post-activation outputs) per layer from last forward pass
         self._activations: list = []
-        self.loss_function = BCE() # use Binary cross Entropy to calculate Loss
+
+        # Choose loss function based on output layer size
+        output_size = network_config[-1].output_shape
+        if output_size > 1:
+            self.loss_function = CrossEntropy()  # Multi-class classification
+        else:
+            self.loss_function = BCE()  # Binary classification
         self.optimizer = Optimizer(lr)
         self.epochs = epoch
         self.batch_size = batch_size
