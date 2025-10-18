@@ -1,5 +1,6 @@
 import json
 import os
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -216,15 +217,19 @@ class MLP:
 
     def save_model(self, filepath: str) -> None:
         """
-        Save the trained model to a file.
+        Save the trained model to a zip file.
 
         Args:
-            filepath: Path where to save the model (without extension)
+            filepath: Path where to save the model (without extension, .zip will be added)
         """
+        # Ensure filepath has .zip extension
+        if not filepath.endswith('.zip'):
+            filepath += '.zip'
+
         # Create directory if it doesn't exist
         Path(filepath).parent.mkdir(parents=True, exist_ok=True)
 
-        # Save model configuration
+        # Prepare model configuration
         config_data = {
             'epochs': self.epochs,
             'lr': self.optimizer.lr,
@@ -235,8 +240,8 @@ class MLP:
             'layers': []
         }
 
-        # Save layer configurations and weights/biases
-        for i, layer in enumerate(self.layers):
+        # Prepare layer configurations
+        for layer in self.layers:
             layer_config = {
                 'input_size': layer.weights.shape[0],
                 'output_size': layer.weights.shape[1],
@@ -245,68 +250,88 @@ class MLP:
             }
             config_data['layers'].append(layer_config)
 
-            # Save weights and biases
-            np.save(f"{filepath}_layer_{i}_weights.npy", layer.weights)
-            np.save(f"{filepath}_layer_{i}_biases.npy", layer.biases)
+        # Save everything to zip file
+        with zipfile.ZipFile(filepath, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Save configuration as JSON
+            config_json = json.dumps(config_data, indent=2)
+            zipf.writestr('config.json', config_json)
 
-        # Save configuration as JSON
-        with open(f"{filepath}_config.json", 'w') as f:
-            json.dump(config_data, f, indent=2)
+            # Save weights and biases for each layer
+            for i, layer in enumerate(self.layers):
+                # Save weights
+                weights_bytes = layer.weights.tobytes()
+                zipf.writestr(f'layer_{i}_weights.npy', weights_bytes)
 
-        print(f"Model saved to {filepath}_config.json and associated .npy files")
+                # Save biases
+                biases_bytes = layer.biases.tobytes()
+                zipf.writestr(f'layer_{i}_biases.npy', biases_bytes)
+
+        print(f"Model saved to {filepath}")
 
     @classmethod
     def load_model(cls, filepath: str) -> 'MLP':
         """
-        Load a trained model from a file.
+        Load a trained model from a zip file.
 
         Args:
-            filepath: Path to the model file (without extension)
+            filepath: Path to the model zip file (with or without .zip extension)
 
         Returns:
             Loaded MLP model instance
         """
-        # Load configuration
-        config_path = f"{filepath}_config.json"
-        if not os.path.exists(config_path):
-            raise FileNotFoundError(f"Model configuration file not found: {config_path}")
+        # Ensure filepath has .zip extension
+        if not filepath.endswith('.zip'):
+            filepath += '.zip'
 
-        with open(config_path) as f:
-            config_data = json.load(f)
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"Model file not found: {filepath}")
 
-        # Reconstruct layer configurations
-        network_config = []
-        for layer_config in config_data['layers']:
-            dense_config = DenseConfig(
-                input_shape=layer_config['input_size'],
-                output_shape=layer_config['output_size'],
-                activation=layer_config['activation'].lower().replace('activation', ''),
-                weights_init=layer_config.get('weights_init', 'xavier_uniform')
+        # Load from zip file
+        with zipfile.ZipFile(filepath, 'r') as zipf:
+            # Load configuration
+            if 'config.json' not in zipf.namelist():
+                raise FileNotFoundError("config.json not found in model zip file")
+
+            config_data = json.loads(zipf.read('config.json').decode('utf-8'))
+
+            # Reconstruct layer configurations
+            network_config = []
+            for layer_config in config_data['layers']:
+                dense_config = DenseConfig(
+                    input_shape=layer_config['input_size'],
+                    output_shape=layer_config['output_size'],
+                    activation=layer_config['activation'].lower().replace('activation', ''),
+                    weights_init=layer_config.get('weights_init', 'xavier_uniform')
+                )
+                network_config.append(dense_config)
+
+            # Create MLP instance
+            mlp = cls(
+                network_config=network_config,
+                epoch=config_data['epochs'],
+                lr=config_data['lr'],
+                batch_size=config_data['batch_size'],
+                print_freq=config_data['print_freq'],
+                es_threshold=config_data['es_threshold']
             )
-            network_config.append(dense_config)
 
-        # Create MLP instance
-        mlp = cls(
-            network_config=network_config,
-            epoch=config_data['epochs'],
-            lr=config_data['lr'],
-            batch_size=config_data['batch_size'],
-            print_freq=config_data['print_freq'],
-            es_threshold=config_data['es_threshold']
-        )
+            # Load weights and biases for each layer
+            for i, layer in enumerate(mlp.layers):
+                weights_filename = f'layer_{i}_weights.npy'
+                biases_filename = f'layer_{i}_biases.npy'
 
-        # Load weights and biases for each layer
-        for i, layer in enumerate(mlp.layers):
-            weights_path = f"{filepath}_layer_{i}_weights.npy"
-            biases_path = f"{filepath}_layer_{i}_biases.npy"
+                if weights_filename not in zipf.namelist() or biases_filename not in zipf.namelist():
+                    raise FileNotFoundError(f"Weight or bias file not found for layer {i}")
 
-            if not os.path.exists(weights_path) or not os.path.exists(biases_path):
-                raise FileNotFoundError(f"Weight or bias file not found for layer {i}")
+                # Load weights
+                weights_bytes = zipf.read(weights_filename)
+                layer.weights = np.frombuffer(weights_bytes, dtype=layer.weights.dtype).reshape(layer.weights.shape)
 
-            layer.weights = np.load(weights_path)
-            layer.biases = np.load(biases_path)
+                # Load biases
+                biases_bytes = zipf.read(biases_filename)
+                layer.biases = np.frombuffer(biases_bytes, dtype=layer.biases.dtype).reshape(layer.biases.shape)
 
-        print(f"Model loaded from {filepath}_config.json")
+        print(f"Model loaded from {filepath}")
         return mlp
 
 # if __name__ == "__main__":
