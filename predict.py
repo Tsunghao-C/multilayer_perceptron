@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Script to load a saved MLP model and make predictions on new data.
-"""
-
 import argparse
 
 import numpy as np
@@ -91,13 +86,13 @@ def main():
     # Make predictions
     print("Making predictions...")
     predictions = mlp.predict(X)
-    print(predictions)
-    print(predictions.shape)
+    # print(predictions)
+    # print(predictions.shape)
 
     # Convert probabilities to class predictions
     class_predictions = np.argmax(predictions, axis=1)
-    print(class_predictions)
-    print(class_predictions.shape)
+    # print(class_predictions)
+    # print(class_predictions.shape)
     class_names = ['B', 'M']  # B=0, M=1
     predicted_classes = [class_names[i] for i in class_predictions]
 
@@ -128,9 +123,9 @@ def main():
     results.to_csv(args.output, index=False)
     print(f"Predictions saved to {args.output}")
 
-    # Display sample results
-    print("\nSample predictions:")
-    print(results.head(10))
+    # # Display sample results
+    # print("\nSample predictions:")
+    # print(results.head(10))
 
 
 if __name__ == "__main__":

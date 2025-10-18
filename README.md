@@ -17,7 +17,7 @@ Steps to do
     - [bonus] implement early stopping (done)
     - [bonus] Use more complex optimization function like Adam, RMSprop, ...
     - [bonus] Evaluate learning pahse with multiple metrics (not just a single R2 score for example)
-4. prediction program that can load weights and biases
+4. prediction program that can load weights and biases (done)
 5. [bonus] Display multiple learning curves on the same graph to compare different models (with different configs)
 
 
@@ -39,4 +39,4 @@ Ten real-valued features are computed for each cell nucleus:
 1. [MLP explained with visual](https://medium.com/data-science/multilayer-perceptron-explained-a-visual-guide-with-mini-2d-dataset-0ae8100c5d1c)
 2. [Softmax and its derivative](https://medium.com/data-science/derivative-of-the-softmax-function-and-the-categorical-cross-entropy-loss-ffceefc081d1)
 3. [Weights Initialization](https://www.geeksforgeeks.org/machine-learning/weight-initialization-techniques-for-deep-neural-networks/)
-
+4. [Optimizers](https://www.geeksforgeeks.org/deep-learning/adam-optimizer/)
