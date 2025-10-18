@@ -10,7 +10,7 @@ import pandas as pd
 
 from src.MLP.Dense import Dense
 from src.MLP.loss_functions import BCE, CrossEntropy
-from src.MLP.optimizer import Optimizer
+from src.MLP.optimizer import optimizer_getter
 
 
 @dataclass
@@ -33,14 +33,21 @@ class MLP:
             es_threshold: float = 0.0002,
             batch_size: int = 8,
             print_freq: int = 100,
+            optimizer: str = "sgd",
+            **optimizer_kwargs
         ) -> None:
         """
         Initialize the Simple Neural Network with specified layers.
 
         Args:
-            input_shape (tuple): A tuple of input examples, input features.
-            output_shape (integer): Number of output classifications.
-            out_activation: activation function for output layer
+            network_config: List of DenseConfig objects defining the network architecture
+            epoch: Number of training epochs
+            lr: Learning rate
+            es_threshold: Early stopping threshold
+            batch_size: Batch size for training
+            print_freq: Frequency of printing training progress
+            optimizer: Optimizer type ("sgd", "adam", "rmsprop")
+            **optimizer_kwargs: Additional optimizer-specific parameters
         """
         if len(network_config) < 3:
             raise ValueError("network_config must contain at least 3 layers (or two hidden layers)")
@@ -63,7 +70,9 @@ class MLP:
             self.loss_function = CrossEntropy()  # Multi-class classification
         else:
             self.loss_function = BCE()  # Binary classification
-        self.optimizer = Optimizer(lr)
+
+        # Initialize optimizer using the new system
+        self.optimizer = optimizer_getter(optimizer, lr=lr, **optimizer_kwargs)
         self.epochs = epoch
         self.batch_size = batch_size
         self.print_freq = print_freq
@@ -122,15 +131,15 @@ class MLP:
             dz = d_prev * self.layers[i].activation.backward(self._activations[i])
             d_prev = self.layers[i].backward(dz)
 
-    def update(self, optimizer: Optimizer):
+    def update(self, optimizer):
         """
         Update model parameter
 
         Args:
-            optimizer: An instance of Optimizer Class
+            optimizer: An instance of Optimizer Class (IOptimizer)
         """
         for layer in self.layers:
-            optimizer.sgd(layer)
+            optimizer.update(layer)
 
     def fit(self, x, y, save_history=True):
         """
@@ -233,6 +242,31 @@ class MLP:
         print(f"Training history saved to {filepath}")
         return filepath
 
+    def _get_optimizer_params(self):
+        """
+        Extract optimizer-specific parameters for saving.
+
+        Returns:
+            Dictionary of optimizer parameters
+        """
+        params = {}
+        optimizer_type = type(self.optimizer).__name__.lower()
+
+        if optimizer_type == 'adam':
+            params = {
+                'beta1': self.optimizer.beta1,
+                'beta2': self.optimizer.beta2,
+                'epsilon': self.optimizer.epsilon
+            }
+        elif optimizer_type == 'rmsprop':
+            params = {
+                'rho': self.optimizer.rho,
+                'epsilon': self.optimizer.epsilon
+            }
+        # SGD doesn't need additional parameters beyond lr
+
+        return params
+
     def predict(self, x):
         """
         predict with current network weights
@@ -294,11 +328,15 @@ class MLP:
         # Prepare model configuration
         config_data = {
             'epochs': self.epochs,
-            'lr': self.optimizer.lr,
             'batch_size': self.batch_size,
             'print_freq': self.print_freq,
             'es_threshold': self.es_threshold,
             'loss_function': type(self.loss_function).__name__,
+            'optimizer': {
+                'type': type(self.optimizer).__name__.lower(),
+                'lr': self.optimizer.lr,
+                'params': self._get_optimizer_params()
+            },
             'layers': []
         }
 
@@ -367,14 +405,29 @@ class MLP:
                 )
                 network_config.append(dense_config)
 
+            # Handle both old and new optimizer configurations
+            if 'optimizer' in config_data:
+                # New format with optimizer configuration
+                optimizer_config = config_data['optimizer']
+                optimizer_type = optimizer_config['type']
+                lr = optimizer_config['lr']
+                optimizer_params = optimizer_config.get('params', {})
+            else:
+                # Old format - assume SGD with lr
+                optimizer_type = 'sgd'
+                lr = config_data.get('lr', 0.01)
+                optimizer_params = {}
+
             # Create MLP instance
             mlp = cls(
                 network_config=network_config,
                 epoch=config_data['epochs'],
-                lr=config_data['lr'],
+                lr=lr,
                 batch_size=config_data['batch_size'],
                 print_freq=config_data['print_freq'],
-                es_threshold=config_data['es_threshold']
+                es_threshold=config_data['es_threshold'],
+                optimizer=optimizer_type,
+                **optimizer_params
             )
 
             # Load weights and biases for each layer
