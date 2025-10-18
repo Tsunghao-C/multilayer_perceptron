@@ -76,22 +76,28 @@ def plot_history(history: list[dict[str, Any]], output_file=None, show=False):
     # Extract data from list of dictionaries
     epochs = [entry['epoch'] for entry in history]
     losses = [float(entry['loss']) for entry in history]  # Convert numpy types to float
+    val_losses = [float(entry['val_loss']) for entry in history]  # Convert numpy types to float
     accuracies = [float(entry['accuracy']) for entry in history]  # Convert numpy types to float
+    val_accuracies = [float(entry['val_accuracy']) for entry in history]  # Convert numpy types to float
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
-    # Plot loss
-    ax1.plot(epochs, losses, linewidth=2, color='blue')
+    # Plot loss - both training and validation
+    ax1.plot(epochs, losses, linewidth=2, color='blue', label='Training Loss', alpha=0.8)
+    ax1.plot(epochs, val_losses, linewidth=2, color='red', label='Validation Loss', alpha=0.8)
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Loss')
-    ax1.set_title('Training Loss')
+    ax1.set_title('Training vs Validation Loss')
+    ax1.legend()
     ax1.grid(True, alpha=0.3)
 
-    # Plot accuracy
-    ax2.plot(epochs, accuracies, linewidth=2, color='red')
+    # Plot accuracy - both training and validation
+    ax2.plot(epochs, accuracies, linewidth=2, color='blue', label='Training Accuracy', alpha=0.8)
+    ax2.plot(epochs, val_accuracies, linewidth=2, color='red', label='Validation Accuracy', alpha=0.8)
     ax2.set_xlabel('Epoch')
     ax2.set_ylabel('Accuracy')
-    ax2.set_title('Training Accuracy')
+    ax2.set_title('Training vs Validation Accuracy')
+    ax2.legend()
     ax2.grid(True, alpha=0.3)
     ax2.set_ylim(0, 1)
 
@@ -108,6 +114,62 @@ def plot_history(history: list[dict[str, Any]], output_file=None, show=False):
             output_file = out_dir / filename
         plt.savefig(output_file, dpi=300, bbox_inches='tight')
         print(f"Training history plot saved to {output_file}")
+
+
+class ZscoreScaler:
+    def __init__(self) -> None:
+        self.mean_ = None
+        self.std_ = None
+        self.feature_names_ = None
+
+    def fit(self, X):
+        """
+        Learn the mean and std from training data.
+
+        Args:
+            X: pandas DataFrame or numpy array
+        """
+        if hasattr(X, 'values'):  # pandas DataFrame
+            self.mean_ = X.mean()
+            self.std_ = X.std()
+            self.feature_names_ = X.columns.tolist()
+        else:  # numpy array
+            self.mean_ = np.mean(X, axis=0)
+            self.std_ = np.std(X, axis=0)
+        return self
+
+    def transform(self, X):
+        """
+        Apply the learned transformation to new data.
+
+        Args:
+            X: pandas DataFrame or numpy array
+
+        Returns:
+            Transformed data with same type as input
+        """
+        if self.mean_ is None or self.std_ is None:
+            raise ValueError("Scaler must be fitted before transform")
+
+        if hasattr(X, 'values'):  # pandas DataFrame
+            # Ensure same columns as training data
+            if self.feature_names_ is not None:
+                X = X[self.feature_names_]
+            return (X - self.mean_) / self.std_
+        else:  # numpy array
+            return (X - self.mean_) / self.std_
+
+    def fit_transform(self, X):
+        """
+        Fit the scaler and transform the data in one step.
+
+        Args:
+            X: pandas DataFrame or numpy array
+
+        Returns:
+            Transformed data with same type as input
+        """
+        return self.fit(X).transform(X)
 
 
 def zscore(x):
@@ -142,16 +204,17 @@ def main():
     # print(x_test)
     # print(y_test)
 
-    # 2. apply zscore normalization to each feature
-    features = list(x_train.columns)
-    for feat in features:
-        x_train[feat] = zscore(x_train[feat])
-        x_test[feat] = zscore(x_test[feat])
+    # 2. Apply z-score normalization using proper fit/transform approach
+    # Learn transformation parameters from training data only
+    scaler = ZscoreScaler()
+    x_train_scaled = scaler.fit_transform(x_train)
+    # Apply same transformation to test data
+    x_test_scaled = scaler.transform(x_test)
 
     # Convert pandas DataFrames to numpy arrays for neural network processing
-    x_train = x_train.values
+    x_train = x_train_scaled.values
     y_train = y_train.values  # Keep as 2D array for one-hot encoded labels
-    x_test = x_test.values
+    x_test = x_test_scaled.values
     y_test = y_test.values
 
     # Generate network configuration from JSON
@@ -163,15 +226,14 @@ def main():
     print(mlp)
 
     # Train with input data
-    mlp.fit(x_train, y_train)
-    print(f"Loss after training is {mlp.train_loss}")
+    mlp.fit(x_train, y_train, x_test, y_test)
 
     # Predict with test data
     y_pred = mlp.predict(x_test)
-    print("Sample predictions (first 5):")
-    print(y_pred[:5])
-    print("Sample ground truth (first 5):")
-    print(y_test[:5])
+    # print("Sample predictions (first 5):")
+    # print(y_pred[:5])
+    # print("Sample ground truth (first 5):")
+    # print(y_test[:5])
 
     # Calculate validation loss
     loss = mlp.loss_function.loss(y_test, y_pred, eps=1e-15)

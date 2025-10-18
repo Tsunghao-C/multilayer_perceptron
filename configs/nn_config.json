@@ -1,13 +1,18 @@
 [
     {
-        "nodes": 32,
-        "activation": "sigmoid",
+        "nodes": 64,
+        "activation": "relu",
         "weights_init": "he_uniform"
 
     },
     {
-        "nodes": 24,
-        "activation": "sigmoid",
+        "nodes": 32,
+        "activation": "relu",
+        "weights_init": "he_uniform"
+    },
+    {
+        "nodes": 8,
+        "activation": "relu",
         "weights_init": "he_uniform"
     },
     {

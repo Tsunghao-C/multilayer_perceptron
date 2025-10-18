@@ -30,7 +30,7 @@ class MLP:
             network_config: list[DenseConfig],
             epoch: int = 1000,
             lr: float = 0.01,
-            es_threshold: float = 0.0002,
+            es_threshold: float = 0.00001,
             batch_size: int = 8,
             print_freq: int = 100,
             optimizer: str = "sgd",
@@ -141,13 +141,15 @@ class MLP:
         for layer in self.layers:
             optimizer.update(layer)
 
-    def fit(self, x, y, save_history=True):
+    def fit(self, x, y, x_val, y_val, save_history=True):
         """
         training the model
 
         Args:
             x: Training features
             y: Training labels
+            x_val: scalared validation data (should be scalared as the same as training data)
+            y_val: validation results
             save_history: Whether to save training history to CSV file
         """
         prev_loss = float("inf")
@@ -182,6 +184,12 @@ class MLP:
             # Calculate average loss for this epoch
             avg_loss = np.mean(epoch_losses)
 
+            # Evaluate with Validation per epoch
+            val_pred = self.forward(x_val)
+            val_loss = self.loss_function.loss(y_val, val_pred)
+            val_eval = self.evaluate(val_pred, y_val)
+            val_accuracy = val_eval['accuracy']
+
             # Calculate accuracy for this epoch (on full training set)
             y_pred_full = self.predict(x)
             evaluation = self.evaluate(y_pred_full, y)
@@ -191,26 +199,24 @@ class MLP:
             training_history.append({
                 'epoch': epoch,
                 'loss': avg_loss,
-                'accuracy': accuracy
+                'val_loss': val_loss,
+                'accuracy': accuracy,
+                'val_accuracy': val_accuracy
             })
 
             # Print epoch status
             if epoch % self.print_freq == 0:
-                print(f"Epoch: {epoch}")
-                print(f"loss: {avg_loss}")
-                print(f"accuracy: {accuracy:.4f}")
-                print("=" * 30)
+                print(f"Epoch: {epoch}\t| Train Loss: {avg_loss}\t| Validation Loss: {val_loss}")
 
             # Early Stopping check
-            if prev_loss - avg_loss < self.es_threshold:
+            if prev_loss - val_loss < self.es_threshold:
                 es_wait += 1
             if es_wait >= es_buffer:
                 print(f"Early stopping triggered at epoch {epoch}")
                 break
-            prev_loss = avg_loss
+            prev_loss = val_loss
 
         # save final loss in this object
-        self.train_loss = avg_loss
         self.history = training_history
 
         # Save training history to CSV
