@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from src.MLP.models import MLP, DenseConfig
+from train_test_split import columns_to_exclude, train_test_split
 
 
 def parse_arg():
@@ -15,7 +16,7 @@ def parse_arg():
         "--dataset",
         required=True,
         type=str,
-        default="data/data_train.csv",
+        default="data/data_with_headers.csv",
         help="Path to training dataset"
     )
     parser.add_argument(
@@ -67,31 +68,39 @@ def main():
     # 1. Create one-hot encoded labels for multi-class classification
     # Generate one-hot encoded result (df_one) of B and M
     df_one = pd.get_dummies(data["Diagnosis"], dtype=int)
-    # print(df_one)
-
     # Remove the original Diagnosis column and keep the one-hot encoded columns
     data = data.drop(["Diagnosis"], axis=1)
 
-    # Separate features and labels
-    x_train = data
-    y_train = df_one  # Keep both B and M columns for one-hot encoding
+    # feature selection
+    ditch_columns = ["ID", "Diagnosis", "smoothness", "symmetry", "fractal_dim"]
+    selected_cols = [col for col in data.columns.tolist() if not columns_to_exclude(ditch_columns, col)]
+
+    X = data[selected_cols]
+    y = df_one
+    # print(df_one)
 
     # Ensure columns are in consistent order: [B, M]
-    if 'B' in y_train.columns and 'M' in y_train.columns:
-        y_train = y_train[['B', 'M']]  # B=0, M=1 becomes [1,0] for B, [0,1] for M
+    if 'B' in y.columns and 'M' in y.columns:
+        y = y[['B', 'M']]  # B=0, M=1 becomes [1,0] for B, [0,1] for M
 
-    # print(y_train)
+    # train test split
+    x_train, x_test, y_train, y_test = train_test_split(X, y, 0.2, True)
     # print(x_train)
-    # print(x_train.shape)
+    # print(y_train)
+    # print(x_test)
+    # print(y_test)
 
     # 2. apply zscore normalization to each feature
     features = list(x_train.columns)
     for feat in features:
         x_train[feat] = zscore(x_train[feat])
+        x_test[feat] = zscore(x_test[feat])
 
     # Convert pandas DataFrames to numpy arrays for neural network processing
     x_train = x_train.values
     y_train = y_train.values  # Keep as 2D array for one-hot encoded labels
+    x_test = x_test.values
+    y_test = y_test.values
 
     # Generate network configuration from JSON
     network_config = nn_config_gen(str(args.config), x_train.shape[1])
@@ -103,6 +112,26 @@ def main():
 
     # Train with input data
     mlp.fit(x_train, y_train)
+    print(f"Loss after training is {mlp.train_loss}")
+
+    # Predict with test data
+    y_pred = mlp.predict(x_test)
+    print("Sample predictions (first 5):")
+    print(y_pred[:5])
+    print("Sample ground truth (first 5):")
+    print(y_test[:5])
+
+    # Calculate validation loss
+    loss = mlp.loss_function.loss(y_test, y_pred, eps=1e-15)
+    print(f"Validation loss is {loss}")
+
+    # Evaluate model performance
+    evaluation = mlp.evaluate(y_pred, y_test)
+    print("\nModel Evaluation:")
+    print(f"Accuracy: {evaluation['accuracy']:.4f} ({evaluation['accuracy']*100:.2f}%)")
+    print(f"Error Rate: {evaluation['error_rate']:.4f} ({evaluation['error_rate']*100:.2f}%)")
+    print(f"Correct Predictions: {evaluation['correct_predictions']}/{evaluation['total_predictions']}")
+    print(f"Errors: {evaluation['errors']}")
 
 
 if __name__ == "__main__":
