@@ -13,7 +13,7 @@ Steps to do
     - need to be able to config hidden layers with a config file (done)
     - visualize learning process (loss, accuracy by epochs) (done)
     - saving model locally
-    - [bonus] store the history of metrics during training
+    - [bonus] store the history of metrics during training (done)
     - [bonus] implement early stopping (done)
     - [bonus] Use more complex optimization function like Adam, RMSprop, ...
     - [bonus] Evaluate learning pahse with multiple metrics (not just a single R2 score for example)

@@ -202,6 +202,7 @@ class MLP:
 
         # save final loss in this object
         self.train_loss = avg_loss
+        self.history = training_history
 
         # Save training history to CSV
         if save_history:

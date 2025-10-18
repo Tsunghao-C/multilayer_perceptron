@@ -1,6 +1,10 @@
 import argparse
 import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -24,6 +28,11 @@ def parse_arg():
         type=str,
         default="configs/nn_config.json",
         help="path to neural network configuration"
+    )
+    parser.add_argument(
+        "--display",
+        action="store_true",
+        help="Display training result right after traing."
     )
     return parser.parse_args()
 
@@ -56,6 +65,49 @@ def nn_config_gen(config_path: str, feat_size: int) -> list[DenseConfig]:
         input_shape = layer["nodes"]
 
     return output_confs
+
+
+def plot_history(history: list[dict[str, Any]], output_file=None, show=False):
+    """Plot training histories for comparison."""
+    if not history:
+        print("No histories to plot")
+        return
+
+    # Extract data from list of dictionaries
+    epochs = [entry['epoch'] for entry in history]
+    losses = [float(entry['loss']) for entry in history]  # Convert numpy types to float
+    accuracies = [float(entry['accuracy']) for entry in history]  # Convert numpy types to float
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Plot loss
+    ax1.plot(epochs, losses, linewidth=2, color='blue')
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss')
+    ax1.set_title('Training Loss')
+    ax1.grid(True, alpha=0.3)
+
+    # Plot accuracy
+    ax2.plot(epochs, accuracies, linewidth=2, color='red')
+    ax2.set_xlabel('Epoch')
+    ax2.set_ylabel('Accuracy')
+    ax2.set_title('Training Accuracy')
+    ax2.grid(True, alpha=0.3)
+    ax2.set_ylim(0, 1)
+
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        if not output_file:
+            out_dir = Path("trainings")
+            out_dir.mkdir(exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"train_{timestamp}.png"
+            output_file = out_dir / filename
+        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        print(f"Training history plot saved to {output_file}")
 
 
 def zscore(x):
@@ -138,23 +190,27 @@ def main():
     mlp.save_model(model_path)
     print(f"\nModel saved to {model_path}")
 
-    # Test loading the model
-    print("\nTesting model loading...")
-    loaded_mlp = MLP.load_model(model_path)
+    # Plot result
+    history = mlp.history
+    plot_history(history, show=args.display)
 
-    # Test predictions with loaded model
-    loaded_pred = loaded_mlp.predict(x_test)
-    loaded_evaluation = loaded_mlp.evaluate(loaded_pred, y_test)
+    # # Test loading the model
+    # print("\nTesting model loading...")
+    # loaded_mlp = MLP.load_model(model_path)
 
-    print("Loaded Model Evaluation:")
-    print(f"Accuracy: {loaded_evaluation['accuracy']:.4f} ({loaded_evaluation['accuracy']*100:.2f}%)")
-    print(f"Error Rate: {loaded_evaluation['error_rate']:.4f} ({loaded_evaluation['error_rate']*100:.2f}%)")
-    print(f"Correct Predictions: {loaded_evaluation['correct_predictions']}/{loaded_evaluation['total_predictions']}")
-    print(f"Errors: {loaded_evaluation['errors']}")
+    # # Test predictions with loaded model
+    # loaded_pred = loaded_mlp.predict(x_test)
+    # loaded_evaluation = loaded_mlp.evaluate(loaded_pred, y_test)
 
-    # Verify predictions are identical
-    predictions_match = np.allclose(y_pred, loaded_pred, atol=1e-10)
-    print(f"\nPredictions match between original and loaded model: {predictions_match}")
+    # print("Loaded Model Evaluation:")
+    # print(f"Accuracy: {loaded_evaluation['accuracy']:.4f} ({loaded_evaluation['accuracy']*100:.2f}%)")
+    # print(f"Error Rate: {loaded_evaluation['error_rate']:.4f} ({loaded_evaluation['error_rate']*100:.2f}%)")
+    # print(f"Correct Predictions: {loaded_evaluation['correct_predictions']}/{loaded_evaluation['total_predictions']}")
+    # print(f"Errors: {loaded_evaluation['errors']}")
+
+    # # Verify predictions are identical
+    # predictions_match = np.allclose(y_pred, loaded_pred, atol=1e-10)
+    # print(f"\nPredictions match between original and loaded model: {predictions_match}")
 
 
 if __name__ == "__main__":
