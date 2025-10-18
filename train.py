@@ -133,6 +133,29 @@ def main():
     print(f"Correct Predictions: {evaluation['correct_predictions']}/{evaluation['total_predictions']}")
     print(f"Errors: {evaluation['errors']}")
 
+    # Save the trained model
+    model_path = "models/trained_mlp"
+    mlp.save_model(model_path)
+    print(f"\nModel saved to {model_path}")
+
+    # Test loading the model
+    print("\nTesting model loading...")
+    loaded_mlp = MLP.load_model(model_path)
+
+    # Test predictions with loaded model
+    loaded_pred = loaded_mlp.predict(x_test)
+    loaded_evaluation = loaded_mlp.evaluate(loaded_pred, y_test)
+
+    print("Loaded Model Evaluation:")
+    print(f"Accuracy: {loaded_evaluation['accuracy']:.4f} ({loaded_evaluation['accuracy']*100:.2f}%)")
+    print(f"Error Rate: {loaded_evaluation['error_rate']:.4f} ({loaded_evaluation['error_rate']*100:.2f}%)")
+    print(f"Correct Predictions: {loaded_evaluation['correct_predictions']}/{loaded_evaluation['total_predictions']}")
+    print(f"Errors: {loaded_evaluation['errors']}")
+
+    # Verify predictions are identical
+    predictions_match = np.allclose(y_pred, loaded_pred, atol=1e-10)
+    print(f"\nPredictions match between original and loaded model: {predictions_match}")
+
 
 if __name__ == "__main__":
     main()

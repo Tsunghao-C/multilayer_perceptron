@@ -1,4 +1,7 @@
+import json
+import os
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
@@ -210,6 +213,101 @@ class MLP:
             'total_predictions': total_predictions,
             'errors': errors
         }
+
+    def save_model(self, filepath: str) -> None:
+        """
+        Save the trained model to a file.
+
+        Args:
+            filepath: Path where to save the model (without extension)
+        """
+        # Create directory if it doesn't exist
+        Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+
+        # Save model configuration
+        config_data = {
+            'epochs': self.epochs,
+            'lr': self.optimizer.lr,
+            'batch_size': self.batch_size,
+            'print_freq': self.print_freq,
+            'es_threshold': self.es_threshold,
+            'loss_function': type(self.loss_function).__name__,
+            'layers': []
+        }
+
+        # Save layer configurations and weights/biases
+        for i, layer in enumerate(self.layers):
+            layer_config = {
+                'input_size': layer.weights.shape[0],
+                'output_size': layer.weights.shape[1],
+                'activation': layer.activation.__class__.__name__,
+                'weights_init': 'xavier_uniform'  # Default, could be enhanced to store actual init method
+            }
+            config_data['layers'].append(layer_config)
+
+            # Save weights and biases
+            np.save(f"{filepath}_layer_{i}_weights.npy", layer.weights)
+            np.save(f"{filepath}_layer_{i}_biases.npy", layer.biases)
+
+        # Save configuration as JSON
+        with open(f"{filepath}_config.json", 'w') as f:
+            json.dump(config_data, f, indent=2)
+
+        print(f"Model saved to {filepath}_config.json and associated .npy files")
+
+    @classmethod
+    def load_model(cls, filepath: str) -> 'MLP':
+        """
+        Load a trained model from a file.
+
+        Args:
+            filepath: Path to the model file (without extension)
+
+        Returns:
+            Loaded MLP model instance
+        """
+        # Load configuration
+        config_path = f"{filepath}_config.json"
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"Model configuration file not found: {config_path}")
+
+        with open(config_path) as f:
+            config_data = json.load(f)
+
+        # Reconstruct layer configurations
+        network_config = []
+        for layer_config in config_data['layers']:
+            dense_config = DenseConfig(
+                input_shape=layer_config['input_size'],
+                output_shape=layer_config['output_size'],
+                activation=layer_config['activation'].lower().replace('activation', ''),
+                weights_init=layer_config.get('weights_init', 'xavier_uniform')
+            )
+            network_config.append(dense_config)
+
+        # Create MLP instance
+        mlp = cls(
+            network_config=network_config,
+            epoch=config_data['epochs'],
+            lr=config_data['lr'],
+            batch_size=config_data['batch_size'],
+            print_freq=config_data['print_freq'],
+            es_threshold=config_data['es_threshold']
+        )
+
+        # Load weights and biases for each layer
+        for i, layer in enumerate(mlp.layers):
+            weights_path = f"{filepath}_layer_{i}_weights.npy"
+            biases_path = f"{filepath}_layer_{i}_biases.npy"
+
+            if not os.path.exists(weights_path) or not os.path.exists(biases_path):
+                raise FileNotFoundError(f"Weight or bias file not found for layer {i}")
+
+            layer.weights = np.load(weights_path)
+            layer.biases = np.load(biases_path)
+
+        print(f"Model loaded from {filepath}_config.json")
+        return mlp
 
 # if __name__ == "__main__":
 #     # Example:
