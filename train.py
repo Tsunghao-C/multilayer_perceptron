@@ -83,8 +83,8 @@ def main():
     if 'B' in y.columns and 'M' in y.columns:
         y = y[['B', 'M']]  # B=0, M=1 becomes [1,0] for B, [0,1] for M
 
-    # train test split
-    x_train, x_test, y_train, y_test = train_test_split(X, y, 0.2, True)
+    # train test split with fixed random seed for reproducible results
+    x_train, x_test, y_train, y_test = train_test_split(X, y, 0.2, True, random_state=42)
     # print(x_train)
     # print(y_train)
     # print(x_test)
@@ -106,8 +106,8 @@ def main():
     network_config = nn_config_gen(str(args.config), x_train.shape[1])
     # print(network_config)
 
-    # Init MLP network instance
-    mlp = MLP(network_config)
+    # Init MLP network instance with fixed random seed for reproducible results
+    mlp = MLP(network_config, epoch=1000, lr=0.005, batch_size=32)
     print(mlp)
 
     # Train with input data

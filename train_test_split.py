@@ -25,7 +25,7 @@ def parse_arg():
     return parser.parse_args()
 
 
-def train_test_split(input_x: pd.DataFrame, input_y: pd.Series, test_size: float = 0.2, shuffle: bool = False) -> tuple:
+def train_test_split(input_x: pd.DataFrame, input_y: pd.Series, test_size: float = 0.2, shuffle: bool = False, random_state: int = None) -> tuple:
     """
     A function that split the input dataset into X_train, X_test, y_train, y_test
 
@@ -34,6 +34,7 @@ def train_test_split(input_x: pd.DataFrame, input_y: pd.Series, test_size: float
         input_y: pd.Series of target column
         test_size: portion of test sets (< 1 and > 0)
         shuffle: bool of whether to randomly select rows from inputs
+        random_state: int seed for reproducible random splits
     """
     size_X = len(input_x.index)
     size_y = len(input_y.index)
@@ -46,6 +47,11 @@ def train_test_split(input_x: pd.DataFrame, input_y: pd.Series, test_size: float
 
     if not shuffle:
         return input_x.iloc[:size_train], input_x.iloc[size_train:], input_y[:size_train], input_y[size_train:]
+
+    # Set random seed for reproducible results
+    if random_state is not None:
+        random.seed(random_state)
+
     index_r = list(range(0, size_X))
     random.shuffle(index_r)
     # print(index_r[:size_test])
