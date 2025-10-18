@@ -2,9 +2,11 @@ import json
 import os
 import zipfile
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from src.MLP.Dense import Dense
 from src.MLP.loss_functions import BCE, CrossEntropy
@@ -28,7 +30,7 @@ class MLP:
             network_config: list[DenseConfig],
             epoch: int = 1000,
             lr: float = 0.01,
-            es_threshold: float = 0.00005,
+            es_threshold: float = 0.0002,
             batch_size: int = 8,
             print_freq: int = 100,
         ) -> None:
@@ -130,16 +132,27 @@ class MLP:
         for layer in self.layers:
             optimizer.sgd(layer)
 
-    def fit(self, x, y):
+    def fit(self, x, y, save_history=True):
         """
         training the model
+
+        Args:
+            x: Training features
+            y: Training labels
+            save_history: Whether to save training history to CSV file
         """
         prev_loss = float("inf")
         es_buffer = 5
         es_wait = 0
         batches = int(x.shape[0] // self.batch_size + 1) if x.shape[0] % self.batch_size else int(x.shape[0] // self.batch_size)
         print(f"{batches} batches for each epoch. Batch size = {self.batch_size}")
+
+        # Initialize training history tracking
+        training_history = []
+
         for epoch in range(self.epochs):
+            epoch_losses = []
+
             # train data by batches
             for i in range(batches):
                 start = i * self.batch_size
@@ -150,26 +163,74 @@ class MLP:
                 y_hat = self.forward(x_batch)
                 # loss calculation
                 loss = self.loss_function.loss(y_batch, y_hat, eps=1e-15)
+                epoch_losses.append(loss)
                 # print(f"Loss of batch {i} in epoch {epoch}:\t{loss}")
                 # backward propogate dW, dB in each layer
                 self.backward(y_batch, y_hat)
                 # update weights and biases with optimizer
                 self.update(self.optimizer)
+
+            # Calculate average loss for this epoch
+            avg_loss = np.mean(epoch_losses)
+
+            # Calculate accuracy for this epoch (on full training set)
+            y_pred_full = self.predict(x)
+            evaluation = self.evaluate(y_pred_full, y)
+            accuracy = evaluation['accuracy']
+
+            # Record training history
+            training_history.append({
+                'epoch': epoch,
+                'loss': avg_loss,
+                'accuracy': accuracy
+            })
+
             # Print epoch status
             if epoch % self.print_freq == 0:
                 print(f"Epoch: {epoch}")
-                print(f"loss: {loss}")
+                print(f"loss: {avg_loss}")
+                print(f"accuracy: {accuracy:.4f}")
                 print("=" * 30)
+
             # Early Stopping check
-            if prev_loss - loss < self.es_threshold:
+            if prev_loss - avg_loss < self.es_threshold:
                 es_wait += 1
             if es_wait >= es_buffer:
                 print(f"Early stopping triggered at epoch {epoch}")
                 break
-            prev_loss = loss
+            prev_loss = avg_loss
+
         # save final loss in this object
-        self.train_loss = loss
+        self.train_loss = avg_loss
+
+        # Save training history to CSV
+        if save_history:
+            self._save_training_history(training_history)
+
         return
+
+    def _save_training_history(self, training_history):
+        """
+        Save training history to CSV file in trainings/ directory.
+
+        Args:
+            training_history: List of dictionaries containing epoch, loss, accuracy
+        """
+        # Create trainings directory if it doesn't exist
+        trainings_dir = Path("trainings")
+        trainings_dir.mkdir(exist_ok=True)
+
+        # Generate timestamp for filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"history_{timestamp}.csv"
+        filepath = trainings_dir / filename
+
+        # Create DataFrame and save to CSV
+        history_df = pd.DataFrame(training_history)
+        history_df.to_csv(filepath, index=False)
+
+        print(f"Training history saved to {filepath}")
+        return filepath
 
     def predict(self, x):
         """
