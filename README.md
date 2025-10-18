@@ -15,8 +15,8 @@ Steps to do
     - saving model locally
     - [bonus] store the history of metrics during training (done)
     - [bonus] implement early stopping (done)
-    - [bonus] Use more complex optimization function like Adam, RMSprop, ...
-    - [bonus] Evaluate learning pahse with multiple metrics (not just a single R2 score for example)
+    - [bonus] Use more complex optimization function like Adam, RMSprop, ... (done)
+    - [bonus] Evaluate learning pahse with multiple metrics (not just a single R2 score for example) (done)
 4. prediction program that can load weights and biases (done)
 5. [bonus] Display multiple learning curves on the same graph to compare different models (with different configs)
 

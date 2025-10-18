@@ -185,10 +185,28 @@ def main():
     print(f"Correct Predictions: {evaluation['correct_predictions']}/{evaluation['total_predictions']}")
     print(f"Errors: {evaluation['errors']}")
 
+    # Enhanced metrics
+    print("\nDetailed Classification Metrics:")
+    class_names = ['Benign (B)', 'Malignant (M)']
+    for i, class_name in enumerate(class_names):
+        print(f"  {class_name}:")
+        print(f"    Precision: {evaluation['precision_per_class'][i]:.4f}")
+        print(f"    Recall: {evaluation['recall_per_class'][i]:.4f}")
+        print(f"    F1-Score: {evaluation['f1_per_class'][i]:.4f}")
+
+    print("\nMacro Averages:")
+    print(f"  Precision: {evaluation['macro_precision']:.4f}")
+    print(f"  Recall: {evaluation['macro_recall']:.4f}")
+    print(f"  F1-Score: {evaluation['macro_f1']:.4f}")
+
+    print("\nMicro Averages:")
+    print(f"  Precision: {evaluation['micro_precision']:.4f}")
+    print(f"  Recall: {evaluation['micro_recall']:.4f}")
+    print(f"  F1-Score: {evaluation['micro_f1']:.4f}")
+
     # Save the trained model
     model_path = "models/trained_mlp"
     mlp.save_model(model_path)
-    print(f"\nModel saved to {model_path}")
 
     # Plot result
     history = mlp.history
