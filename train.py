@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 from src.MLP.models import MLP, DenseConfig
@@ -116,66 +115,6 @@ def plot_history(history: list[dict[str, Any]], output_file=None, show=False):
         print(f"Training history plot saved to {output_file}")
 
 
-class ZscoreScaler:
-    def __init__(self) -> None:
-        self.mean_ = None
-        self.std_ = None
-        self.feature_names_ = None
-
-    def fit(self, X):
-        """
-        Learn the mean and std from training data.
-
-        Args:
-            X: pandas DataFrame or numpy array
-        """
-        if hasattr(X, 'values'):  # pandas DataFrame
-            self.mean_ = X.mean()
-            self.std_ = X.std()
-            self.feature_names_ = X.columns.tolist()
-        else:  # numpy array
-            self.mean_ = np.mean(X, axis=0)
-            self.std_ = np.std(X, axis=0)
-        return self
-
-    def transform(self, X):
-        """
-        Apply the learned transformation to new data.
-
-        Args:
-            X: pandas DataFrame or numpy array
-
-        Returns:
-            Transformed data with same type as input
-        """
-        if self.mean_ is None or self.std_ is None:
-            raise ValueError("Scaler must be fitted before transform")
-
-        if hasattr(X, 'values'):  # pandas DataFrame
-            # Ensure same columns as training data
-            if self.feature_names_ is not None:
-                X = X[self.feature_names_]
-            return (X - self.mean_) / self.std_
-        else:  # numpy array
-            return (X - self.mean_) / self.std_
-
-    def fit_transform(self, X):
-        """
-        Fit the scaler and transform the data in one step.
-
-        Args:
-            X: pandas DataFrame or numpy array
-
-        Returns:
-            Transformed data with same type as input
-        """
-        return self.fit(X).transform(X)
-
-
-def zscore(x):
-    return (x - np.mean(x)) / np.std(x)
-
-
 def main():
     args = parse_arg()
     data = pd.read_csv(str(args.dataset))
@@ -199,17 +138,17 @@ def main():
 
     # train test split with fixed random seed for reproducible results
     x_train, x_test, y_train, y_test = train_test_split(X, y, 0.2, True, random_state=42)
-    # print(x_train)
-    # print(y_train)
-    # print(x_test)
-    # print(y_test)
 
-    # 2. Apply z-score normalization using proper fit/transform approach
-    # Learn transformation parameters from training data only
-    scaler = ZscoreScaler()
-    x_train_scaled = scaler.fit_transform(x_train)
-    # Apply same transformation to test data
-    x_test_scaled = scaler.transform(x_test)
+    # 2. Init MLP instance
+    # Generate network configuration from JSON
+    network_config = nn_config_gen(str(args.config), x_train.shape[1])
+    # print(network_config)
+
+    # Init MLP network instance with fixed random seed for reproducible results
+    mlp = MLP(network_config, epoch=1000, lr=0.005, batch_size=32)
+
+    # 3. Use MLP's built-in preprocessing method
+    x_train_scaled, _, x_test_scaled = mlp.preprocess_data(x_train, x_test=x_test)
 
     # Convert pandas DataFrames to numpy arrays for neural network processing
     x_train = x_train_scaled.values
@@ -217,29 +156,20 @@ def main():
     x_test = x_test_scaled.values
     y_test = y_test.values
 
-    # Generate network configuration from JSON
-    network_config = nn_config_gen(str(args.config), x_train.shape[1])
-    # print(network_config)
-
-    # Init MLP network instance with fixed random seed for reproducible results
-    mlp = MLP(network_config, epoch=1000, lr=0.005, batch_size=32)
-    print(mlp)
-
-    # Train with input data
+    # 4. Train with input data
     mlp.fit(x_train, y_train, x_test, y_test)
 
-    # Predict with test data
+    # 5. Predict with test data
     y_pred = mlp.predict(x_test)
+    # Calculate validation loss
+    loss = mlp.loss_function.loss(y_test, y_pred, eps=1e-15)
+    print(f"Validation loss is {loss}")
     # print("Sample predictions (first 5):")
     # print(y_pred[:5])
     # print("Sample ground truth (first 5):")
     # print(y_test[:5])
 
-    # Calculate validation loss
-    loss = mlp.loss_function.loss(y_test, y_pred, eps=1e-15)
-    print(f"Validation loss is {loss}")
-
-    # Evaluate model performance
+    # 6. Evaluate model performance
     evaluation = mlp.evaluate(y_pred, y_test)
     print("\nModel Evaluation:")
     print(f"Accuracy: {evaluation['accuracy']:.4f} ({evaluation['accuracy']*100:.2f}%)")
@@ -247,7 +177,7 @@ def main():
     print(f"Correct Predictions: {evaluation['correct_predictions']}/{evaluation['total_predictions']}")
     print(f"Errors: {evaluation['errors']}")
 
-    # Enhanced metrics
+    # 6. Enhanced metrics
     print("\nDetailed Classification Metrics:")
     class_names = ['Benign (B)', 'Malignant (M)']
     for i, class_name in enumerate(class_names):
@@ -266,11 +196,11 @@ def main():
     print(f"  Recall: {evaluation['micro_recall']:.4f}")
     print(f"  F1-Score: {evaluation['micro_f1']:.4f}")
 
-    # Save the trained model
+    # 7. Save the trained model
     model_path = "models/trained_mlp"
     mlp.save_model(model_path)
 
-    # Plot result
+    # 8. Plot result
     history = mlp.history
     plot_history(history, show=args.display)
 

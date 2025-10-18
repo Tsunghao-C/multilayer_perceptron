@@ -32,11 +32,6 @@ def parse_arg():
     return parser.parse_args()
 
 
-def zscore(x):
-    """Z-score normalization function."""
-    return (x - np.mean(x)) / np.std(x)
-
-
 def main():
     args = parse_arg()
 
@@ -74,14 +69,11 @@ def main():
     selected_cols = [col for col in data.columns.tolist() if not columns_to_exclude(ditch_columns, col)]
     X = data[selected_cols]
 
-    # Apply z-score normalization
-    features = list(X.columns)
-    X = X.copy()  # Avoid SettingWithCopyWarning
-    for feat in features:
-        X[feat] = zscore(X[feat])
+    # Apply normalization using the model's built-in scaler
+    X_scaled = mlp.scalar.transform(X)
 
     # Convert to numpy array
-    X = X.values
+    X = X_scaled.values
 
     # Make predictions
     print("Making predictions...")

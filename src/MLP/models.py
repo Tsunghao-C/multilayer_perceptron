@@ -11,6 +11,7 @@ import pandas as pd
 from src.MLP.Dense import Dense
 from src.MLP.loss_functions import BCE, CrossEntropy
 from src.MLP.optimizer import optimizer_getter
+from src.MLP.scalar import ZscoreScaler
 
 
 @dataclass
@@ -32,7 +33,7 @@ class MLP:
             lr: float = 0.01,
             es_threshold: float = 0.00001,
             batch_size: int = 8,
-            print_freq: int = 100,
+            print_freq: int = 20,
             optimizer: str = "sgd",
             **optimizer_kwargs
         ) -> None:
@@ -73,6 +74,7 @@ class MLP:
 
         # Initialize optimizer using the new system
         self.optimizer = optimizer_getter(optimizer, lr=lr, **optimizer_kwargs)
+        self.scalar = ZscoreScaler()
         self.epochs = epoch
         self.batch_size = batch_size
         self.print_freq = print_freq
@@ -279,6 +281,27 @@ class MLP:
         """
         return self.forward(x)
 
+    def preprocess_data(self, x_train, x_val=None, x_test=None):
+        """
+        Preprocess data using the model's built-in scaler.
+
+        Args:
+            x_train: Training features (pandas DataFrame or numpy array)
+            x_val: Validation features (optional)
+            x_test: Test features (optional)
+
+        Returns:
+            Tuple of preprocessed data (x_train_scaled, x_val_scaled, x_test_scaled)
+        """
+        # Fit scaler on training data
+        x_train_scaled = self.scalar.fit_transform(x_train)
+
+        # Transform validation and test data if provided
+        x_val_scaled = self.scalar.transform(x_val) if x_val is not None else None
+        x_test_scaled = self.scalar.transform(x_test) if x_test is not None else None
+
+        return x_train_scaled, x_val_scaled, x_test_scaled
+
     def evaluate(self, y_pred, y_truth):
         """
         Accept the prediction, transform probability to 1 or 0 by
@@ -414,6 +437,12 @@ class MLP:
                 'lr': self.optimizer.lr,
                 'params': self._get_optimizer_params()
             },
+            'scaler': {
+                'type': type(self.scalar).__name__,
+                'mean_': self.scalar.mean_.tolist() if self.scalar.mean_ is not None else None,
+                'std_': self.scalar.std_.tolist() if self.scalar.std_ is not None else None,
+                'feature_names_': self.scalar.feature_names_
+            },
             'layers': []
         }
 
@@ -506,6 +535,13 @@ class MLP:
                 optimizer=optimizer_type,
                 **optimizer_params
             )
+
+            # Restore scaler parameters if available
+            if 'scaler' in config_data:
+                scaler_config = config_data['scaler']
+                mlp.scalar.mean_ = np.array(scaler_config['mean_']) if scaler_config['mean_'] is not None else None
+                mlp.scalar.std_ = np.array(scaler_config['std_']) if scaler_config['std_'] is not None else None
+                mlp.scalar.feature_names_ = scaler_config['feature_names_']
 
             # Load weights and biases for each layer
             for i, layer in enumerate(mlp.layers):
