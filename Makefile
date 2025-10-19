@@ -75,5 +75,11 @@ test:
 	@python scripts/merge_json_reports.py
 	@echo "Merged JSON reports saved to merged_report.json"
 
+clean:
+	-rm -rf models
+	-rm -rf trainings
+	-rm -rf results
+	-rm predictions_*.csv
+
 %:
 	@echo "No target specified. Use 'make help' to see available targets."

@@ -40,3 +40,15 @@ Ten real-valued features are computed for each cell nucleus:
 2. [Softmax and its derivative](https://medium.com/data-science/derivative-of-the-softmax-function-and-the-categorical-cross-entropy-loss-ffceefc081d1)
 3. [Weights Initialization](https://www.geeksforgeeks.org/machine-learning/weight-initialization-techniques-for-deep-neural-networks/)
 4. [Optimizers](https://www.geeksforgeeks.org/deep-learning/adam-optimizer/)
+
+
+# cmd notes
+
+## Quick Training with Defaults:
+`uv run python train.py --dataset data/data_with_headers.csv`
+Custom Adam Configuration:
+`uv run python train.py --dataset data/data_with_headers.csv --optimizer adam --lr 0.001 --beta1 0.8 --beta2 0.999`
+Custom RMSprop Configuration:
+`uv run python train.py --dataset data/data_with_headers.csv --optimizer rmsprop --lr 0.005 --rho 0.95`
+High-Performance SGD:
+`uv run python train.py --dataset data/data_with_headers.csv --optimizer sgd --lr 0.01 --batch_size 32 --epoch 200`

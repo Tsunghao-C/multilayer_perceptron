@@ -23,9 +23,9 @@ def parse_arg():
         help="Path to training dataset"
     )
     parser.add_argument(
-        "--config",
+        "--nn_config",
         type=str,
-        default="configs/nn_config.json",
+        default="configs/nn/nn_config.json",
         help="path to neural network configuration"
     )
     parser.add_argument(
@@ -33,6 +33,20 @@ def parse_arg():
         action="store_true",
         help="Display training result right after traing."
     )
+    parser.add_argument("--epoch", type=int, default=1000, help="Epoch of MLP (int)")
+    parser.add_argument("--lr", type=float, default=0.005, help="Learning rate of MLP (float)")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size, how many samples are trained per update (int)")
+    parser.add_argument("--es_threshold", type=float, default=0.00001, help="Early stop threshold (float)")
+    parser.add_argument("--optimizer", type=str, default="sgd", help="Optimizer method for updating weights and biases (string)")
+
+    # Adam optimizer parameters
+    parser.add_argument("--beta1", type=float, default=None, help="Adam: exponential decay rate for first moment estimates (default: 0.9)")
+    parser.add_argument("--beta2", type=float, default=None, help="Adam: exponential decay rate for second moment estimates (default: 0.999)")
+    parser.add_argument("--epsilon", type=float, default=None, help="Adam/RMSprop: small constant for numerical stability (default: 1e-8)")
+
+    # RMSprop optimizer parameters
+    parser.add_argument("--rho", type=float, default=None, help="RMSprop: decay rate for moving average of squared gradients (default: 0.9)")
+
     return parser.parse_args()
 
 
@@ -141,11 +155,30 @@ def main():
 
     # 2. Init MLP instance
     # Generate network configuration from JSON
-    network_config = nn_config_gen(str(args.config), x_train.shape[1])
+    network_config = nn_config_gen(str(args.nn_config), x_train.shape[1])
     # print(network_config)
 
+    # Prepare optimizer-specific parameters
+    optimizer_kwargs = {}
+    if args.beta1 is not None:
+        optimizer_kwargs['beta1'] = args.beta1
+    if args.beta2 is not None:
+        optimizer_kwargs['beta2'] = args.beta2
+    if args.rho is not None:
+        optimizer_kwargs['rho'] = args.rho
+    if args.epsilon is not None:
+        optimizer_kwargs['epsilon'] = args.epsilon
+
     # Init MLP network instance with fixed random seed for reproducible results
-    mlp = MLP(network_config, epoch=1000, lr=0.005, batch_size=32)
+    mlp = MLP(
+        network_config=network_config,
+        epoch=args.epoch,
+        lr=args.lr,
+        batch_size=args.batch_size,
+        es_threshold=args.es_threshold,
+        optimizer=args.optimizer,
+        **optimizer_kwargs
+    )
 
     # 3. Use MLP's built-in preprocessing method
     x_train_scaled, _, x_test_scaled = mlp.preprocess_data(x_train, x_test=x_test)
