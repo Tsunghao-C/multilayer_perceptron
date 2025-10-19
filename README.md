@@ -18,7 +18,7 @@ Steps to do
     - [bonus] Use more complex optimization function like Adam, RMSprop, ... (done)
     - [bonus] Evaluate learning pahse with multiple metrics (not just a single R2 score for example) (done)
 4. prediction program that can load weights and biases (done)
-5. [bonus] Display multiple learning curves on the same graph to compare different models (with different configs)
+5. [bonus] Display multiple learning curves on the same graph to compare different models (with different configs) (done)
 
 
 Ten real-valued features are computed for each cell nucleus:
