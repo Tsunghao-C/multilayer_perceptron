@@ -454,7 +454,7 @@ class MLP:
                 'input_size': layer.weights.shape[0],
                 'output_size': layer.weights.shape[1],
                 'activation': layer.activation.__class__.__name__,
-                'weights_init': 'xavier_uniform'  # Default, could be enhanced to store actual init method
+                'weights_init': layer.weight_initializer.__class__.__name__
             }
             config_data['layers'].append(layer_config)
 

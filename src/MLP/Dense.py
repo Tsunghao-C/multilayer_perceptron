@@ -22,9 +22,9 @@ class Dense:
 
         # Initialize weights using the specified weight initializer
         weight_init_class = weight_init_getter(weight_init)
-        weight_initializer = weight_init_class(input_size, output_size, seed)
-        self.weights = weight_initializer.gen_weights()
-        self.biases = weight_initializer.gen_biases()
+        self.weight_initializer = weight_init_class(input_size, output_size, seed)
+        self.weights = self.weight_initializer.gen_weights()
+        self.biases = self.weight_initializer.gen_biases()
 
         # Cache for backward pass
         self.last_input = None  # cached input used for gradient computation
