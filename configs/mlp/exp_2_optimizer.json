@@ -1,0 +1,80 @@
+{
+    "opt_sgd_lr_0.005": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "sgd"
+    },
+    "opt_sgd_lr_0.008": {
+        "epoch": 1000,
+        "lr": 0.008,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "sgd"
+    },
+    "opt_sgd_lr_0.01": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "sgd"
+    },
+    "opt_adam_lr_0.005": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "adam",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-8
+    },
+    "opt_adam_lr_0.008": {
+        "epoch": 1000,
+        "lr": 0.008,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "adam",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-8
+    },
+    "opt_adam_lr_0.01": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "adam",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-8
+    },
+    "opt_rmsprop_lr_0.005": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "rmsprop",
+        "rho": 0.9,
+        "epsilon": 1e-8
+    },
+    "opt_rmsprop_lr_0.008": {
+        "epoch": 1000,
+        "lr": 0.008,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "rmsprop",
+        "rho": 0.9,
+        "epsilon": 1e-8
+    },
+    "opt_rmsprop_lr_0.01": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "rmsprop",
+        "rho": 0.9,
+        "epsilon": 1e-8
+    }
+}

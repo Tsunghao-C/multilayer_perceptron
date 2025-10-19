@@ -1,0 +1,89 @@
+{
+    "adam_beta1_0.8": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.0001,
+        "batch_size": 16,
+        "optimizer": "adam",
+        "beta1": 0.8,
+        "beta2": 0.999,
+        "epsilon": 1e-8
+    },
+    "adam_beta1_0.9": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.0001,
+        "batch_size": 16,
+        "optimizer": "adam",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-8
+    },
+    "adam_beta1_0.95": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.0001,
+        "batch_size": 16,
+        "optimizer": "adam",
+        "beta1": 0.95,
+        "beta2": 0.999,
+        "epsilon": 1e-8
+    },
+    "adam_beta2_0.99": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.0001,
+        "batch_size": 16,
+        "optimizer": "adam",
+        "beta1": 0.9,
+        "beta2": 0.99,
+        "epsilon": 1e-8
+    },
+    "adam_beta2_0.999": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.0001,
+        "batch_size": 16,
+        "optimizer": "adam",
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-8
+    },
+    "adam_beta2_0.9999": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.0001,
+        "batch_size": 16,
+        "optimizer": "adam",
+        "beta1": 0.9,
+        "beta2": 0.9999,
+        "epsilon": 1e-8
+    },
+    "rmsprop_rho_0.8": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.0001,
+        "batch_size": 16,
+        "optimizer": "rmsprop",
+        "rho": 0.8,
+        "epsilon": 1e-8
+    },
+    "rmsprop_rho_0.9": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.0001,
+        "batch_size": 16,
+        "optimizer": "rmsprop",
+        "rho": 0.9,
+        "epsilon": 1e-8
+    },
+    "rmsprop_rho_0.95": {
+        "epoch": 1000,
+        "lr": 0.005,
+        "es_threshold": 0.0001,
+        "batch_size": 16,
+        "optimizer": "rmsprop",
+        "rho": 0.95,
+        "epsilon": 1e-8
+    }
+}

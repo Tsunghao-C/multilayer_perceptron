@@ -34,6 +34,7 @@ class MLP:
             es_threshold: float = 0.00001,
             batch_size: int = 8,
             print_freq: int = 20,
+            label: str = None,
             optimizer: str = "sgd",
             **optimizer_kwargs
         ) -> None:
@@ -79,6 +80,7 @@ class MLP:
         self.batch_size = batch_size
         self.print_freq = print_freq
         self.es_threshold = es_threshold
+        self.exp_label = label
 
     def forward(self, x):
         """
@@ -240,7 +242,7 @@ class MLP:
 
         # Generate timestamp for filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"history_{timestamp}.csv"
+        filename = f"history_{self.exp_label}_{timestamp}.csv" if self.exp_label else f"history_{timestamp}.csv"
         filepath = trainings_dir / filename
 
         # Create DataFrame and save to CSV

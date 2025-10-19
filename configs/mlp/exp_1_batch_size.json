@@ -1,0 +1,51 @@
+{
+    "batch_1": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 1,
+        "optimizer": "sgd"
+    },
+    "batch_2": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 2,
+        "optimizer": "sgd"
+    },
+    "batch_4": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 4,
+        "optimizer": "sgd"
+    },
+    "batch_8": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 8,
+        "optimizer": "sgd"
+    },
+    "batch_16": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 16,
+        "optimizer": "sgd"
+    },
+    "batch_32": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 32,
+        "optimizer": "sgd"
+    },
+    "batch_64": {
+        "epoch": 1000,
+        "lr": 0.01,
+        "es_threshold": 0.00001,
+        "batch_size": 64,
+        "optimizer": "sgd"
+    }
+}
