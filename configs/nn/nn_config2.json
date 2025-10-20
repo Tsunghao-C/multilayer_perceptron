@@ -1,0 +1,28 @@
+[
+    {
+        "nodes": 64,
+        "activation": "relu",
+        "weights_init": "he_uniform"
+
+    },
+    {
+        "nodes": 32,
+        "activation": "relu",
+        "weights_init": "he_uniform"
+    },
+    {
+        "nodes": 8,
+        "activation": "relu",
+        "weights_init": "he_uniform"
+    },
+    {
+        "nodes": 4,
+        "activation": "relu",
+        "weights_init": "he_uniform"
+    },
+    {
+        "nodes": 2,
+        "activation": "softmax",
+        "weights_init": "xavier_uniform"
+    }
+]
